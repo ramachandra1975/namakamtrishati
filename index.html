@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VCLU Phase 2 — Rudram · Sahasranama · Trishati</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+Devanagari:wght@300;400;600&family=JetBrains+Mono:wght@300;400&display=swap');
+
+:root {
+  --bg:        #07050a;
+  --bg2:       #0e0a14;
+  --bg3:       #160f1e;
+  --bg4:       #1e1428;
+  --vedic:     #9b6bff;
+  --vedic2:    #c4a0ff;
+  --vedic3:    #e8d8ff;
+  --ai:        #00d4c8;
+  --ai2:       #60ece6;
+  --ai3:       #b0f8f5;
+  --gold:      #f0b840;
+  --gold2:     #ffd880;
+  --rose:      #ff6b8a;
+  --rose2:     #ffaabc;
+  --green:     #50e898;
+  --green2:    #a0f8cc;
+  --text:      #f0eaf8;
+  --text2:     #c0b0d8;
+  --text3:     #806898;
+  --border:    rgba(155,107,255,0.15);
+  --border2:   rgba(155,107,255,0.35);
+  --glow:      0 0 30px rgba(155,107,255,0.2);
+  --glow2:     0 0 20px rgba(0,212,200,0.2);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  line-height: 1.8;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 10% 20%, rgba(155,107,255,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(0,212,200,0.05) 0%, transparent 50%);
+}
+
+/* ═══ HEADER ═══ */
+.site-header {
+  text-align: center;
+  padding: 3rem 2rem 2rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.site-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(155,107,255,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.phase-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--vedic); margin-bottom: 0.8rem;
+  display: inline-block; padding: 0.2rem 0.8rem;
+  border: 1px solid var(--border2); border-radius: 20px;
+}
+.site-header h1 {
+  font-family: 'Cinzel', serif; font-weight: 400;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, var(--vedic2), var(--ai2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.4rem;
+}
+.site-header .devanagari {
+  font-family: 'Noto Serif Devanagari', serif;
+  font-size: 1.4rem; color: var(--gold); display: block; margin-bottom: 0.6rem;
+}
+.site-header p {
+  color: var(--text2); font-size: 1rem; font-style: italic;
+  max-width: 600px; margin: 0 auto;
+}
+
+/* ═══ NAV ═══ */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(7,5,10,0.95);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  padding: 0 2rem;
+  display: flex; align-items: center; gap: 0; overflow-x: auto;
+}
+nav a {
+  padding: 1rem 1.2rem; color: var(--text3); text-decoration: none;
+  font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: all 0.2s;
+}
+nav a:hover { color: var(--vedic2); }
+nav a.active { color: var(--vedic2); border-bottom-color: var(--vedic); }
+.nav-legend {
+  margin-left: auto; display: flex; gap: 1rem; align-items: center;
+  font-size: 0.72rem; white-space: nowrap;
+}
+.leg { display: flex; align-items: center; gap: 0.3rem; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ═══ PAGE ═══ */
+.page { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+/* ═══ MODULE SECTIONS ═══ */
+.module {
+  padding: 4rem 0; border-bottom: 1px solid var(--border);
+}
+.module-header {
+  display: flex; align-items: flex-start; gap: 2rem;
+  margin-bottom: 3rem;
+}
+.module-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 3rem; font-weight: 300; color: var(--border2);
+  line-height: 1; flex-shrink: 0;
+}
+.module-title-block h2 {
+  font-family: 'Cinzel', serif; font-weight: 400;
+  font-size: 1.6rem; letter-spacing: 0.06em;
+  color: var(--text); margin-bottom: 0.3rem;
+}
+.module-title-block .subtitle {
+  font-size: 0.85rem; color: var(--vedic); letter-spacing: 0.12em;
+  text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
+}
+.module-title-block p {
+  color: var(--text2); margin-top: 0.6rem; font-size: 1rem;
+}
+
+/* ═══ TWO-COLUMN LAYOUT ═══ */
+.split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+  margin-bottom: 2rem;
+}
+@media(max-width:768px) { .split { grid-template-columns: 1fr; } }
+
+.col-vedic {
+  background: linear-gradient(135deg, rgba(155,107,255,0.06), transparent);
+  border: 1px solid var(--border); border-left: 3px solid var(--vedic);
+  border-radius: 4px; padding: 1.5rem;
+}
+.col-ai {
+  background: linear-gradient(135deg, rgba(0,212,200,0.05), transparent);
+  border: 1px solid var(--border); border-left: 3px solid var(--ai);
+  border-radius: 4px; padding: 1.5rem;
+}
+.col-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+  margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.col-vedic .col-label { color: var(--vedic); }
+.col-ai .col-label    { color: var(--ai); }
+
+.verse-block {
+  font-family: 'Noto Serif Devanagari', serif;
+  font-size: 1.15rem; color: var(--vedic3); line-height: 2;
+  margin-bottom: 0.6rem;
+}
+.transliteration { font-style: italic; color: var(--text2); font-size: 0.95rem; margin-bottom: 0.4rem; }
+.translation { color: var(--text3); font-size: 0.9rem; }
+
+.equation-block {
+  background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1rem 1.2rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem; color: var(--ai2);
+  overflow-x: auto; line-height: 2;
+  margin: 1rem 0;
+}
+
+/* ═══ INTERACTIVE WIDGETS ═══ */
+.widget {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;
+}
+.widget-title {
+  font-family: 'Cinzel', serif; font-size: 0.85rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+
+/* WAVEFORM CANVAS */
+canvas { display: block; width: 100%; border-radius: 4px; }
+
+/* SLIDERS */
+.slider-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  margin-bottom: 0.6rem; flex-wrap: wrap;
+}
+.slider-row label {
+  font-size: 0.82rem; color: var(--text2); min-width: 140px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.slider-row input[type=range] {
+  flex: 1; min-width: 120px; accent-color: var(--vedic);
+}
+.slider-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem; color: var(--vedic2); min-width: 48px; text-align: right;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer;
+  font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.1em;
+  text-transform: uppercase; border: 1px solid; transition: all 0.2s;
+}
+.btn-vedic { background: rgba(155,107,255,0.15); border-color: var(--vedic); color: var(--vedic2); }
+.btn-vedic:hover { background: rgba(155,107,255,0.3); }
+.btn-ai { background: rgba(0,212,200,0.1); border-color: var(--ai); color: var(--ai2); }
+.btn-ai:hover { background: rgba(0,212,200,0.25); }
+.btn-gold { background: rgba(240,184,64,0.15); border-color: var(--gold); color: var(--gold2); }
+.btn-gold:hover { background: rgba(240,184,64,0.3); }
+
+/* ═══════════════════════════
+   MODULE 2: RUDRAM DSP
+═══════════════════════════ */
+#waveform-canvas { background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 6px; }
+
+.phase-result {
+  text-align: center; padding: 0.8rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+  border-radius: 6px; margin-top: 0.8rem; transition: all 0.4s;
+}
+
+/* ═══════════════════════════
+   MODULE 3: SAHASRANAMA
+═══════════════════════════ */
+#graph-container {
+  width: 100%; height: 500px;
+  background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; position: relative;
+}
+#graph-container svg { width: 100%; height: 100%; }
+
+.node-info {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 1rem; min-height: 80px;
+  font-size: 0.88rem;
+}
+.node-info .name-dev {
+  font-family: 'Noto Serif Devanagari', serif;
+  font-size: 1.2rem; color: var(--vedic2); display: block;
+}
+.node-info .name-iast { color: var(--gold); font-style: italic; }
+.node-info .name-meaning { color: var(--text2); font-size: 0.85rem; margin-top: 0.3rem; }
+.node-info .name-dhatu { color: var(--ai2); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+.similarity-bar {
+  height: 8px; background: var(--bg3); border-radius: 4px;
+  overflow: hidden; margin: 0.4rem 0;
+}
+.similarity-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--vedic), var(--ai));
+  transition: width 0.5s ease;
+}
+
+/* ═══════════════════════════
+   MODULE 4: TRISHATI MATRIX
+═══════════════════════════ */
+.matrix-container {
+  overflow-x: auto; margin: 1rem 0;
+}
+.trishati-grid {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 3px; min-width: 760px;
+}
+.matrix-cell {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; cursor: pointer;
+  font-family: 'Noto Serif Devanagari', serif;
+  font-size: clamp(0.55rem, 1.2vw, 0.8rem);
+  font-weight: 400;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  line-height: 1;
+  padding: 2px;
+}
+.matrix-cell:hover { transform: scale(1.3); z-index: 10; position: relative; border-color: var(--gold); }
+.matrix-cell.active { transform: scale(1.3); z-index: 10; border-color: var(--gold2); box-shadow: 0 0 12px rgba(240,184,64,0.5); }
+
+.syllable-header {
+  display: grid; grid-template-columns: repeat(20, 1fr);
+  gap: 3px; min-width: 760px; margin-bottom: 4px;
+}
+.syl-label {
+  text-align: center; font-family: 'Noto Serif Devanagari', serif;
+  font-size: 0.8rem; color: var(--gold2);
+  padding: 0.2rem 0;
+}
+
+.matrix-row-labels {
+  display: flex; gap: 3px; flex-direction: column; min-height: 10px;
+}
+
+.conv-sweep {
+  position: absolute; top: 0; width: 5%;
+  background: rgba(0,212,200,0.15);
+  border: 1px solid var(--ai);
+  border-radius: 2px;
+  pointer-events: none;
+  transition: left 0.1s linear;
+}
+
+.trishati-info {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 1.2rem; margin-top: 1rem;
+}
+.trishati-info h4 {
+  font-family: 'Cinzel', serif; font-size: 0.9rem;
+  color: var(--gold); margin-bottom: 0.5rem; letter-spacing: 0.08em;
+}
+.trishati-info .t-dev {
+  font-family: 'Noto Serif Devanagari', serif;
+  font-size: 1.2rem; color: var(--vedic2); display: block;
+}
+.trishati-info .t-meaning { color: var(--text2); font-size: 0.88rem; }
+
+/* JAPA COUNTER */
+.japa-display {
+  display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+}
+.japa-count {
+  font-family: 'Cinzel', serif; font-size: 3rem; color: var(--vedic2);
+  line-height: 1; min-width: 80px;
+}
+.japa-ring {
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 3px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; flex-shrink: 0;
+}
+.japa-ring svg { position: absolute; top: -3px; left: -3px; }
+.japa-ring-label { font-size: 0.7rem; color: var(--text3); text-align: center; line-height: 1.3; }
+.lstm-state {
+  flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  color: var(--ai2); background: rgba(0,0,0,0.4); border-radius: 4px; padding: 0.6rem;
+  line-height: 1.8;
+}
+
+/* ═══ EQUATION CARD ═══ */
+.eq-card {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 1.5rem; margin: 1rem 0;
+}
+.eq-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--text3); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.eq-latex {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+  color: var(--gold2); line-height: 2; overflow-x: auto;
+  white-space: pre-wrap; word-break: break-all;
+}
+.eq-explain { color: var(--text2); font-size: 0.9rem; margin-top: 0.8rem; }
+.eq-explain strong { color: var(--ai2); }
+
+/* ═══ TAG PILLS ═══ */
+.tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+.tag {
+  font-size: 0.7rem; padding: 0.15rem 0.6rem; border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tag-vedic { background: rgba(155,107,255,0.12); border: 1px solid rgba(155,107,255,0.3); color: var(--vedic2); }
+.tag-ai    { background: rgba(0,212,200,0.1);    border: 1px solid rgba(0,212,200,0.3);   color: var(--ai2); }
+.tag-math  { background: rgba(240,184,64,0.1);   border: 1px solid rgba(240,184,64,0.3);  color: var(--gold2); }
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* select */
+select {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 0.4rem 0.8rem;
+  color: var(--text); font-family: 'Cormorant Garamond', serif;
+  font-size: 0.9rem; outline: none; cursor: pointer;
+}
+select:focus { border-color: var(--vedic); }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="site-header">
+  <span class="phase-label">VCLU · Phase 2 · Modules 2 · 3 · 4</span>
+  <h1>Rudram · Sahasranāma · Triśatī</h1>
+  <span class="devanagari">नमः शिवाय · ललिता सहस्रनाम · त्रिशती</span>
+  <p>DSP Signal Processing · Knowledge Graph · Convolutional Matrix — all three interactive</p>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a href="#module2" class="active">Module 2 — Rudram DSP</a>
+  <a href="#module3">Module 3 — Sahasranāma Graph</a>
+  <a href="#module4">Module 4 — Triśatī Matrix</a>
+  <div class="nav-legend">
+    <span class="leg"><span class="leg-dot" style="background:var(--vedic)"></span> Vedic</span>
+    <span class="leg"><span class="leg-dot" style="background:var(--ai)"></span> AI</span>
+  </div>
+</nav>
+
+<div class="page">
+
+<!-- ════════════════════════════════════════════════════════════
+     MODULE 2 — SRI RUDRAM: DSP SIGNAL PROCESSING
+════════════════════════════════════════════════════════════ -->
+<section class="module" id="module2">
+  <div class="module-header">
+    <div class="module-num">02</div>
+    <div class="module-title-block">
+      <h2>Sri Rudram — Digital Signal Processing</h2>
+      <div class="subtitle">Namakam · Chamakam · Noise Cancellation · Generative Synthesis</div>
+      <p>The oldest two-phase signal processing system: Namakam applies destructive interference to dissolve ego-noise; Chamakam applies constructive interference to manifest desired states. Equations 5 and 6.</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col-vedic">
+      <div class="col-label">🕉 Vedic Source — Namakam</div>
+      <div class="verse-block">नमस्ते रुद्र मन्यव उतो त इषवे नमः</div>
+      <div class="transliteration">Namaste Rudra manyava uto ta iṣave namaḥ</div>
+      <div class="translation">"Salutations to thy wrath, O Rudra, and salutations also to thy arrow." — Anuvāka 1</div>
+      <div class="tags">
+        <span class="tag tag-vedic">Namakam</span>
+        <span class="tag tag-vedic">Ego Dissolution</span>
+        <span class="tag tag-vedic">Phase Inversion</span>
+      </div>
+    </div>
+    <div class="col-ai">
+      <div class="col-label">⚙ AI Parallel — Destructive Interference</div>
+      <p style="font-size:0.9rem;color:var(--text2);">The repeated <em>Namaha</em> ("not-I") acts as a phase-inverted acoustic wave. In DSP, this is an <strong style="color:var(--ai2);">active noise cancellation</strong> gate — the system shoots an opposing waveform at incoming noise, cancelling it to zero.</p>
+      <div class="equation-block">Eq.5: S_mind(t) + S_Namakam(t)
+= A·sin(ωt) + A·sin(ωt + π)
+= 0   →   Śūnya (ground state)</div>
+      <div class="tags">
+        <span class="tag tag-ai">Destructive Interference</span>
+        <span class="tag tag-ai">Phase Inversion NOT Gate</span>
+        <span class="tag tag-math">Eq. 5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAVEFORM WIDGET -->
+  <div class="widget">
+    <div class="widget-title">🌊 Live Waveform Animator — Namakam Phase Cancellation</div>
+    <div class="slider-row">
+      <label>Ego-Noise Amplitude</label>
+      <input type="range" id="amp-mind" min="0" max="100" value="80" oninput="drawWaves()">
+      <span class="slider-val" id="amp-mind-val">80</span>
+    </div>
+    <div class="slider-row">
+      <label>Namakam Amplitude</label>
+      <input type="range" id="amp-nama" min="0" max="100" value="60" oninput="drawWaves()">
+      <span class="slider-val" id="amp-nama-val">60</span>
+    </div>
+    <div class="slider-row">
+      <label>Phase Offset (ωt + φ)</label>
+      <input type="range" id="phase" min="0" max="360" value="180" oninput="drawWaves()">
+      <span class="slider-val" id="phase-val">180°</span>
+    </div>
+    <canvas id="waveform-canvas" height="200"></canvas>
+    <div id="phase-result" class="phase-result" style="background:rgba(155,107,255,0.1);border:1px solid var(--border);color:var(--vedic2);">
+      Resultant amplitude: calculating…
+    </div>
+    <div style="display:flex;gap:0.8rem;margin-top:1rem;flex-wrap:wrap;">
+      <button class="btn btn-vedic" onclick="setPhase(180)">⟲ Full Namakam (180°)</button>
+      <button class="btn btn-ai" onclick="setPhase(90)">⊕ Partial (90°)</button>
+      <button class="btn btn-gold" onclick="animatePhase()">▶ Animate Sweep</button>
+      <button class="btn btn-vedic" onclick="resetWave()">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="split" style="margin-top:2rem;">
+    <div class="col-vedic">
+      <div class="col-label">🕉 Vedic Source — Chamakam</div>
+      <div class="verse-block">शं च मे मयश्च मे</div>
+      <div class="transliteration">śaṃ ca me mayaś ca me</div>
+      <div class="translation">"Let happiness be mine, and bliss be mine." — Chamakam, Anuvāka 1</div>
+      <p style="font-size:0.88rem;color:var(--text2);margin-top:0.6rem;">Chamakam lists 344 pairs of complementary states: grain and rain, cattle and progeny, breath and life — each coupled with <em>cha me</em> (and to me). A generative matrix of all human needs.</p>
+    </div>
+    <div class="col-ai">
+      <div class="col-label">⚙ AI Parallel — Generative Attention</div>
+      <p style="font-size:0.9rem;color:var(--text2);">Once the mind is at ground zero (Namakam output = 0), Chamakam functions as a <strong style="color:var(--ai2);">Transformer Attention Gate</strong> — Query (the desire), Key (the universal element), Value (its intrinsic reality).</p>
+      <div class="equation-block">Eq.6: Ω_Manifest = ⊕[Softmax(Q·Kᵀ/√dk)·V]
+
+Q_chame = desire vector
+K_Xi    = elemental key (grain/wealth/health)
+V_Xi    = intrinsic value tensor</div>
+      <div class="tags">
+        <span class="tag tag-ai">Transformer Attention</span>
+        <span class="tag tag-ai">QKV Matrix</span>
+        <span class="tag tag-math">Eq. 6</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAMAKAM QKV WIDGET -->
+  <div class="widget">
+    <div class="widget-title">⚡ Chamakam Attention Gate — Pick a Cha Me Element</div>
+    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+      <select id="chame-select" onchange="updateChame()">
+        <option value="0">Śaṃ — Happiness (शं)</option>
+        <option value="1">Dhānyam — Grain (धान्यम्)</option>
+        <option value="2">Rayaḥ — Wealth (रयः)</option>
+        <option value="3">Paśavaḥ — Cattle/Life (पशवः)</option>
+        <option value="4">Prāṇaḥ — Breath (प्राणः)</option>
+        <option value="5">Āyuḥ — Longevity (आयुः)</option>
+        <option value="6">Vijñānam — Wisdom (विज्ञानम्)</option>
+        <option value="7">Ānandaḥ — Bliss (आनन्दः)</option>
+      </select>
+      <button class="btn btn-ai" onclick="animateAttention()">▶ Run Attention Gate</button>
+    </div>
+    <div id="chame-output" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+      <div style="background:var(--bg3);border:1px solid rgba(155,107,255,0.3);border-radius:6px;padding:1rem;">
+        <div style="font-size:0.65rem;color:var(--vedic);letter-spacing:0.1em;margin-bottom:0.5rem;font-family:monospace;">QUERY VECTOR (Desire)</div>
+        <div id="q-vec" style="font-family:monospace;font-size:0.72rem;color:var(--vedic2);line-height:1.8;"></div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid rgba(0,212,200,0.3);border-radius:6px;padding:1rem;">
+        <div style="font-size:0.65rem;color:var(--ai);letter-spacing:0.1em;margin-bottom:0.5rem;font-family:monospace;">KEY·VALUE (Element)</div>
+        <div id="kv-vec" style="font-family:monospace;font-size:0.72rem;color:var(--ai2);line-height:1.8;"></div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid rgba(240,184,64,0.3);border-radius:6px;padding:1rem;">
+        <div style="font-size:0.65rem;color:var(--gold);letter-spacing:0.1em;margin-bottom:0.5rem;font-family:monospace;">ATTENTION OUTPUT</div>
+        <div id="attn-out" style="font-family:monospace;font-size:0.72rem;color:var(--gold2);line-height:1.8;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="eq-card">
+    <div class="eq-num">Equation 5 — Namakam Destructive Interference</div>
+    <div class="eq-latex">S_mind(t) + S_Namakam(t) = A·sin(ωt) + A·sin(ωt + π) = 0
+
+Phase inversion (π radians) = acoustic NOT gate
+Output: Śūnya — the cleared mind-state</div>
+    <div class="eq-explain">The Namakam's repeated <em>Namaḥ</em> physically generates a sound wave exactly <strong>180° out of phase</strong> with the chaotic beta-wave frequency of the ego-driven mind. This is mathematically identical to active noise cancellation in audio engineering — the system monitors incoming noise and fires an opposing waveform to create destructive interference, reducing resultant amplitude to zero.</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     MODULE 3 — LALITHĀ SAHASRANĀMA: KNOWLEDGE GRAPH
+════════════════════════════════════════════════════════════ -->
+<section class="module" id="module3">
+  <div class="module-header">
+    <div class="module-num">03</div>
+    <div class="module-title-block">
+      <h2>Lalithā Sahasranāma — Knowledge Graph</h2>
+      <div class="subtitle">1000-Node Semantic Web · Cosine Similarity · Softmax over Ψ_Brahman</div>
+      <p>Each of the 1000 names is a node in a high-dimensional semantic space. Names cluster by meaning, root word (dhātu), and philosophical category. Hover/click any node to see full analysis. Pick two names to compute their cosine similarity.</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col-vedic">
+      <div class="col-label">🕉 Vedic Structure</div>
+      <div class="verse-block" style="font-size:0.95rem;">श्री माता · श्री महाराज्ञी · श्रीमत्सिंहासनेश्वरी</div>
+      <div class="transliteration">Śrī Mātā · Śrī Mahārājñī · Śrīmat-Siṃhāsaneśvarī</div>
+      <p style="font-size:0.88rem;color:var(--text2);margin-top:0.6rem;">The first three names form a trinity: Creative Mother → Supreme Empress → Sovereign of the Lion-Throne. Each name is a compressed philosophical statement containing a root dhātu, prefix modifiers, and semantic layers across Vedanta, Tantra, Āyurveda, and Acoustic dimensions.</p>
+    </div>
+    <div class="col-ai">
+      <div class="col-label">⚙ AI Parallel — Vector Embedding + Cosine Similarity</div>
+      <div class="equation-block">Eq.3: Sim(N₁,N₂) = (u·v)/(‖u‖·‖v‖)
+
+u,v = d-dimensional name embeddings
+Output ∈ [-1, +1]
++1 = semantically identical
+ 0 = orthogonal (unrelated)
+-1 = antithetical meanings</div>
+      <div class="tags">
+        <span class="tag tag-ai">Knowledge Graph</span>
+        <span class="tag tag-ai">Cosine Similarity</span>
+        <span class="tag tag-math">Eq. 3</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE GRAPH -->
+  <div class="widget">
+    <div class="widget-title">🕸 Sahasranāma Knowledge Graph — 60-Node Representative Cluster</div>
+    <p style="font-size:0.82rem;color:var(--text3);margin-bottom:1rem;">Click any node to inspect. Drag to explore. Node color = philosophical category. Edge thickness = semantic closeness.</p>
+    <div id="graph-container"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+      <div class="node-info" id="node-info">
+        <span style="font-size:0.8rem;color:var(--text3);font-style:italic;">Click a node to see full name analysis…</span>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.5rem;font-family:monospace;">CLUSTER LEGEND</div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;font-size:0.8rem;">
+          <span><span style="color:#9b6bff">■</span> Sovereignty / Power (Śakti)</span>
+          <span><span style="color:#00d4c8">■</span> Knowledge / Wisdom (Jñāna)</span>
+          <span><span style="color:#f0b840">■</span> Creation / Manifestation</span>
+          <span><span style="color:#ff6b8a">■</span> Liberation / Non-dual (Mokṣa)</span>
+          <span><span style="color:#50e898">■</span> Sound / Mantra (Nāda)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COSINE SIMILARITY WIDGET -->
+  <div class="widget">
+    <div class="widget-title">📐 Cosine Similarity Calculator — Compare Any Two Names</div>
+    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+      <select id="name-a" onchange="computeSimilarity()" style="flex:1;min-width:180px;">
+      </select>
+      <span style="color:var(--text3);font-family:monospace;">vs</span>
+      <select id="name-b" onchange="computeSimilarity()" style="flex:1;min-width:180px;">
+      </select>
+    </div>
+    <div id="similarity-output" style="background:var(--bg3);border-radius:6px;padding:1rem;">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-bottom:0.3rem;font-family:monospace;">COSINE SIMILARITY</div>
+          <div id="sim-score" style="font-family:'Cinzel',serif;font-size:2rem;color:var(--gold2);">—</div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:0.72rem;color:var(--text3);margin-bottom:0.4rem;font-family:monospace;">SEMANTIC DISTANCE</div>
+          <div class="similarity-bar"><div class="similarity-fill" id="sim-bar" style="width:0%"></div></div>
+          <div id="sim-interpret" style="font-size:0.8rem;color:var(--text2);margin-top:0.4rem;font-style:italic;"></div>
+        </div>
+      </div>
+      <div id="sim-detail" style="margin-top:0.8rem;font-size:0.82rem;color:var(--text2);"></div>
+    </div>
+  </div>
+
+  <div class="eq-card">
+    <div class="eq-num">Equation 10 — Non-Linear Quantization (Softmax over Ψ_Brahman)</div>
+    <div class="eq-latex">P(Object_i) = exp(wᵢᵀ · Ψ_Brahman) / Σⱼ exp(wⱼᵀ · Ψ_Brahman)
+
+The entire multi-verse = probability distribution
+over the singular wave-function of absolute reality</div>
+    <div class="eq-explain">Each of the 1000 names represents a discrete <strong>probability mass</strong> over the absolute ground-state wave-function Ψ_Brahman. The Softmax normalization ensures all names sum to 1 — the whole probability space is Brahman. Individual names are not separate entities but <strong>localized activations</strong> of the singular Divine field, exactly as quantum excitations are localized modes of a quantum field.</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     MODULE 4 — LALITHĀ TRIŚATĪ: CONVOLUTIONAL MATRIX
+════════════════════════════════════════════════════════════ -->
+<section class="module" id="module4">
+  <div class="module-header">
+    <div class="module-num">04</div>
+    <div class="module-title-block">
+      <h2>Lalithā Triśatī — Convolutional Matrix</h2>
+      <div class="subtitle">15×20 Grid · Pañcadaśī Kernel · LSTM Japa Counter</div>
+      <p>The 300 names of the Triśatī are organized as a 15×20 matrix: 15 columns (one per syllable of the Pañcadaśī Mantra) × 20 rows (20 names per syllable). This is structurally identical to a convolutional filter sweeping over a base frequency. Click any cell to see the name. Run the japa counter to simulate 108 iterations.</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col-vedic">
+      <div class="col-label">🕉 Pañcadaśī Mantra — The 15-Syllable Kernel</div>
+      <div class="verse-block" style="font-size:1.3rem;letter-spacing:0.15em;">
+        क ए ई ल ह्रीं<br>
+        ह स क ह ल ह्रीं<br>
+        स क ल ह्रीं
+      </div>
+      <div class="transliteration">Ka · E · Ī · La · Hrīṃ / Ha · Sa · Ka · Ha · La · Hrīṃ / Sa · Ka · La · Hrīṃ</div>
+      <p style="font-size:0.88rem;color:var(--text2);margin-top:0.6rem;">Each of the 15 bīja (seed) syllables expands into 20 names of the Goddess in the Triśatī. The kernel sweeps through human consciousness systematically altering its neural architecture.</p>
+    </div>
+    <div class="col-ai">
+      <div class="col-label">⚙ AI Parallel — Convolutional Filter</div>
+      <div class="equation-block">Eq.4: (C * M)[i,j] = ΣₘΣₙ C[i-m, j-n]·M[m,n]
+
+C = consciousness (input feature map)
+M = 15×20 Triśatī matrix (filter kernel)
+* = convolution operator
+Output: transformed cognitive feature map</div>
+      <div class="tags">
+        <span class="tag tag-ai">CNN Convolution</span>
+        <span class="tag tag-ai">Feature Extraction</span>
+        <span class="tag tag-math">Eq. 4 · Eq. 9</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRISHATI MATRIX -->
+  <div class="widget">
+    <div class="widget-title">⊞ Interactive 15×20 Triśatī Matrix — Click Any Cell</div>
+    <p style="font-size:0.82rem;color:var(--text3);margin-bottom:1rem;">Each column = one Pañcadaśī syllable kernel · Each row = one name expansion · Color intensity = semantic weight</p>
+    <div class="matrix-container" style="position:relative;">
+      <div class="syllable-header" id="syl-header"></div>
+      <div class="trishati-grid" id="trishati-grid"></div>
+    </div>
+    <div class="trishati-info" id="trishati-info">
+      <h4>Click a cell to see the name…</h4>
+    </div>
+    <div style="display:flex;gap:0.8rem;margin-top:1rem;flex-wrap:wrap;">
+      <button class="btn btn-ai" onclick="runConvSweep()">▶ Animate Kernel Sweep</button>
+      <button class="btn btn-vedic" onclick="highlightSyllable(0)">Ka Column</button>
+      <button class="btn btn-vedic" onclick="highlightSyllable(4)">Hrīṃ¹ Column</button>
+      <button class="btn btn-vedic" onclick="highlightSyllable(9)">Hrīṃ² Column</button>
+      <button class="btn btn-gold" onclick="clearHighlight()">Clear</button>
+    </div>
+  </div>
+
+  <!-- JAPA COUNTER -->
+  <div class="widget">
+    <div class="widget-title">🔮 LSTM Japa Counter — 108 Iterations Hidden State</div>
+    <p style="font-size:0.82rem;color:var(--text3);margin-bottom:1rem;">Each japa (repetition) updates the LSTM hidden state h_t. Watch consciousness converge toward meditative flow over 108 iterations.</p>
+    <div class="japa-display">
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);font-family:monospace;margin-bottom:0.2rem;">ITERATION</div>
+        <div class="japa-count" id="japa-count">0</div>
+        <div style="font-size:0.75rem;color:var(--text3);">/ 108</div>
+      </div>
+      <div class="japa-ring">
+        <svg width="86" height="86" viewBox="0 0 86 86">
+          <circle cx="43" cy="43" r="38" fill="none" stroke="rgba(155,107,255,0.15)" stroke-width="3"/>
+          <circle id="japa-ring-circle" cx="43" cy="43" r="38" fill="none"
+            stroke="var(--vedic)" stroke-width="3"
+            stroke-dasharray="239" stroke-dashoffset="239"
+            stroke-linecap="round" transform="rotate(-90 43 43)"
+            style="transition:stroke-dashoffset 0.3s"/>
+        </svg>
+        <div class="japa-ring-label" style="position:relative;z-index:1;font-size:0.65rem;color:var(--text3);">japa<br>mālā</div>
+      </div>
+      <div class="lstm-state" id="lstm-state">
+        h₀ = [0.00, 0.00, 0.00, 0.00]  ← initial state
+        x₀ = mantra input vector
+        Awaiting first iteration…
+      </div>
+    </div>
+    <div style="display:flex;gap:0.8rem;margin-top:1rem;flex-wrap:wrap;">
+      <button class="btn btn-vedic" onclick="startJapa()">▶ Begin Japa (108)</button>
+      <button class="btn btn-ai" onclick="stepJapa()">→ Single Step</button>
+      <button class="btn btn-gold" onclick="resetJapa()">↺ Reset</button>
+      <span id="japa-state-label" style="font-size:0.8rem;color:var(--text3);font-style:italic;align-self:center;"></span>
+    </div>
+  </div>
+
+  <div class="eq-card">
+    <div class="eq-num">Equation 9 — Recursive Cognitive Loop (LSTM Hidden State)</div>
+    <div class="eq-latex">h_t = tanh(W_hh · h_{t-1} + W_xh · x_t + b_t)
+
+h_t = consciousness state at japa t
+h_{t-1} = previous state (memory)
+x_t = acoustic input (mantra syllable)
+W_hh, W_xh = synaptic weight matrices
+b_t = contextual bias (time of day, intention)</div>
+    <div class="eq-explain">Continuous mantra repetition creates a <strong>recurrent neural feedback loop</strong>. Each iteration updates the hidden state using both the current acoustic input (the mantra syllable) and the memory of all previous states. Over 108 iterations, the weight matrices lock the system into a <strong>high-dimensional attractor state</strong> — the meditative flow known as dhāraṇā, where the cognitive system self-organises around the mantra's frequency pattern.</div>
+  </div>
+</section>
+
+</div><!-- /page -->
+
+<script>
+/* ════════════════════════════════════════════════
+   MODULE 2 — WAVEFORM ANIMATOR
+════════════════════════════════════════════════ */
+const canvas = document.getElementById('waveform-canvas');
+const ctx2d = canvas.getContext('2d');
+let phaseAnimId = null;
+
+function getSliders() {
+  const am = parseInt(document.getElementById('amp-mind').value);
+  const an = parseInt(document.getElementById('amp-nama').value);
+  const ph = parseInt(document.getElementById('phase').value);
+  document.getElementById('amp-mind-val').textContent = am;
+  document.getElementById('amp-nama-val').textContent = an;
+  document.getElementById('phase-val').textContent = ph + '°';
+  return { am, an, ph: ph * Math.PI / 180 };
+}
+
+function drawWaves() {
+  const { am, an, ph } = getSliders();
+  const W = canvas.offsetWidth || 700;
+  canvas.width = W; canvas.height = 200;
+
+  ctx2d.clearRect(0, 0, W, 200);
+
+  // Grid
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx2d.lineWidth = 1;
+  for (let y = 0; y <= 200; y += 40) {
+    ctx2d.beginPath(); ctx2d.moveTo(0, y); ctx2d.lineTo(W, y); ctx2d.stroke();
+  }
+  ctx2d.beginPath(); ctx2d.moveTo(0, 100); ctx2d.lineTo(W, 100);
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.12)'; ctx2d.stroke();
+
+  const drawWave = (amp, phase, color, label, dash) => {
+    ctx2d.beginPath();
+    if (dash) ctx2d.setLineDash([6,4]); else ctx2d.setLineDash([]);
+    ctx2d.strokeStyle = color; ctx2d.lineWidth = 2;
+    for (let x = 0; x < W; x++) {
+      const t = (x / W) * Math.PI * 4;
+      const y = 100 - (amp / 100) * 80 * Math.sin(t + phase);
+      x === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+    }
+    ctx2d.stroke();
+    ctx2d.setLineDash([]);
+    ctx2d.fillStyle = color; ctx2d.font = '11px JetBrains Mono, monospace';
+    ctx2d.fillText(label, 8, 12 + (dash ? 16 : 0));
+  };
+
+  drawWave(am, 0, 'rgba(155,107,255,0.9)', `S_mind (A=${am})`, false);
+  drawWave(an, ph, 'rgba(0,212,200,0.9)', `S_Namakam (A=${an}, φ=${Math.round(ph*180/Math.PI)}°)`, true);
+
+  // Resultant
+  ctx2d.beginPath();
+  ctx2d.strokeStyle = 'rgba(240,184,64,0.85)'; ctx2d.lineWidth = 2.5;
+  let maxResultant = 0;
+  for (let x = 0; x < W; x++) {
+    const t = (x / W) * Math.PI * 4;
+    const combined = (am/100)*80*Math.sin(t) + (an/100)*80*Math.sin(t + ph);
+    maxResultant = Math.max(maxResultant, Math.abs(combined));
+    const y = 100 - combined;
+    x === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+  }
+  ctx2d.stroke();
+  ctx2d.fillStyle = 'rgba(240,184,64,0.9)'; ctx2d.font = '11px JetBrains Mono, monospace';
+  ctx2d.fillText(`Resultant (max ${maxResultant.toFixed(1)}px)`, 8, 44);
+
+  // Result label
+  const reduction = Math.max(0, 100 - (maxResultant / 80) * 100);
+  const el = document.getElementById('phase-result');
+  if (reduction > 90) {
+    el.style.background = 'rgba(80,232,152,0.1)'; el.style.borderColor = 'var(--green)'; el.style.color = 'var(--green2)';
+    el.textContent = `✓ Śūnya achieved — ${reduction.toFixed(0)}% noise reduction. Ego dissolved. Mind at ground state.`;
+  } else if (reduction > 50) {
+    el.style.background = 'rgba(240,184,64,0.1)'; el.style.borderColor = 'var(--gold)'; el.style.color = 'var(--gold2)';
+    el.textContent = `◑ Partial cancellation — ${reduction.toFixed(0)}% reduction. Increase Namakam amplitude or approach 180°.`;
+  } else {
+    el.style.background = 'rgba(155,107,255,0.1)'; el.style.borderColor = 'var(--vedic)'; el.style.color = 'var(--vedic2)';
+    el.textContent = `○ Minimal cancellation — ${reduction.toFixed(0)}% reduction. Ego-noise dominant.`;
+  }
+}
+
+function setPhase(deg) {
+  if (phaseAnimId) { cancelAnimationFrame(phaseAnimId); phaseAnimId = null; }
+  document.getElementById('phase').value = deg; drawWaves();
+}
+function resetWave() { setPhase(0); document.getElementById('amp-mind').value = 80; document.getElementById('amp-nama').value = 60; drawWaves(); }
+function animatePhase() {
+  if (phaseAnimId) { cancelAnimationFrame(phaseAnimId); phaseAnimId = null; return; }
+  let deg = 0;
+  const step = () => {
+    deg = (deg + 2) % 361;
+    document.getElementById('phase').value = deg; drawWaves();
+    phaseAnimId = requestAnimationFrame(step);
+  };
+  phaseAnimId = requestAnimationFrame(step);
+}
+
+/* ════════════════════════════════════════════════
+   CHAMAKAM QKV
+════════════════════════════════════════════════ */
+const chameData = [
+  { name: 'Śaṃ — Happiness', element: 'Joy', q: [0.92,0.10,0.05,0.78], k: [0.88,0.15,0.08,0.72], v: [0.95,0.12,0.06,0.81], attn: 0.94 },
+  { name: 'Dhānyam — Grain', element: 'Earth/Food', q: [0.45,0.88,0.12,0.30], k: [0.40,0.90,0.18,0.25], v: [0.50,0.85,0.15,0.35], attn: 0.87 },
+  { name: 'Rayaḥ — Wealth',  element: 'Lakṣmī', q: [0.70,0.55,0.40,0.60], k: [0.65,0.60,0.38,0.55], v: [0.75,0.58,0.42,0.62], attn: 0.89 },
+  { name: 'Paśavaḥ — Life',  element: 'Prāṇa', q: [0.30,0.20,0.95,0.50], k: [0.28,0.18,0.92,0.48], v: [0.32,0.22,0.96,0.52], attn: 0.96 },
+  { name: 'Prāṇaḥ — Breath', element: 'Vāyu', q: [0.15,0.10,0.98,0.20], k: [0.12,0.08,0.96,0.18], v: [0.18,0.12,0.99,0.22], attn: 0.98 },
+  { name: 'Āyuḥ — Longevity',element: 'Soma', q: [0.60,0.40,0.70,0.80], k: [0.58,0.38,0.68,0.78], v: [0.62,0.42,0.72,0.82], attn: 0.92 },
+  { name: 'Vijñānam — Wisdom',element: 'Sarasvatī', q: [0.98,0.05,0.10,0.88], k: [0.96,0.04,0.08,0.86], v: [0.99,0.06,0.12,0.90], attn: 0.97 },
+  { name: 'Ānandaḥ — Bliss', element: 'Brahman', q: [1.00,1.00,1.00,1.00], k: [0.99,0.98,0.99,1.00], v: [1.00,1.00,1.00,1.00], attn: 1.00 },
+];
+
+function updateChame() {
+  const i = parseInt(document.getElementById('chame-select').value);
+  const d = chameData[i];
+  const fmt = v => v.toFixed(3);
+  document.getElementById('q-vec').innerHTML =
+    `Q: [${d.q.map(fmt).join(',\n   ')}]\n\nDesire: ${d.name}`;
+  document.getElementById('kv-vec').innerHTML =
+    `K: [${d.k.map(fmt).join(',\n   ')}]\n\nElement: ${d.element}`;
+  document.getElementById('attn-out').innerHTML =
+    `Attention: ${d.attn.toFixed(4)}\n\nSoftmax(Q·Kᵀ/√4)·V\n= ${(d.attn * 100).toFixed(1)}% activation`;
+}
+function animateAttention() {
+  const i = parseInt(document.getElementById('chame-select').value);
+  const d = chameData[i];
+  let step = 0;
+  const phases = ['Encoding desire vector…', 'Computing Q·Kᵀ…', 'Scaling by √dk…', 'Applying Softmax…', `Manifesting ${d.element}…`];
+  const int = setInterval(() => {
+    document.getElementById('attn-out').textContent = phases[step] + '\n\nAttention weight: ' + (d.attn * (step/4)).toFixed(4);
+    step++;
+    if (step >= phases.length) { clearInterval(int); updateChame(); }
+  }, 500);
+}
+
+/* ════════════════════════════════════════════════
+   MODULE 3 — KNOWLEDGE GRAPH
+════════════════════════════════════════════════ */
+const categories = {
+  sovereignty: { color: '#9b6bff', label: 'Sovereignty / Śakti' },
+  knowledge:   { color: '#00d4c8', label: 'Knowledge / Jñāna' },
+  creation:    { color: '#f0b840', label: 'Creation / Manifestation' },
+  liberation:  { color: '#ff6b8a', label: 'Liberation / Mokṣa' },
+  sound:       { color: '#50e898', label: 'Sound / Nāda' },
+};
+
+const nameData = [
+  { id:0,  dev:'श्री माता',         iast:'Śrī Mātā',          meaning:'Auspicious Mother — Creative force',          dhatu:'śrī + mātā',    cat:'creation',    group:1 },
+  { id:1,  dev:'श्री महाराज्ञी',    iast:'Śrī Mahārājñī',     meaning:'Supreme Empress — Sovereign of all worlds',   dhatu:'mahā + rāj',    cat:'sovereignty', group:1 },
+  { id:2,  dev:'श्रीमत्सिंहासनेश्वरी',iast:'Siṃhāsaneśvarī', meaning:'Goddess of the Lion Throne',                  dhatu:'siṃha + āsana', cat:'sovereignty', group:1 },
+  { id:3,  dev:'चिदग्निकुण्डसम्भूता',iast:'Cidagnikuṇḍasambhūtā',meaning:'Born from fire of consciousness',         dhatu:'cid + agni',    cat:'creation',    group:2 },
+  { id:4,  dev:'देवकार्यसमुद्यता',   iast:'Devakāryasamudyatā',meaning:'Risen for the work of the gods',            dhatu:'deva + kārya',  cat:'creation',    group:2 },
+  { id:5,  dev:'उद्यद्भानुसहस्राभा', iast:'Udyadbhanusahasrābhā',meaning:'Radiant as a thousand rising suns',       dhatu:'ud + bhānu',    cat:'creation',    group:2 },
+  { id:6,  dev:'चतुर्बाहुसमन्विता',  iast:'Caturbāhusamanvitā', meaning:'Endowed with four arms',                   dhatu:'catur + bāhu',  cat:'sovereignty', group:2 },
+  { id:7,  dev:'रागस्वरूपापाशाढ्या', iast:'Rāgasvarūpapāśāḍhyā',meaning:'Holding the noose of passion/form',       dhatu:'rāga + svarūpa',cat:'sound',       group:3 },
+  { id:8,  dev:'क्रोधाकाराङ्कुशोज्ज्वला',iast:'Krodhākārāṅkuśojjvalā',meaning:'Blazing with the goad of wrath', dhatu:'krodha + aṅkuśa',cat:'sovereignty', group:3 },
+  { id:9,  dev:'मनोरूपेक्षुकोदण्डा', iast:'Manorūpekṣukodaṇḍā', meaning:'Whose bow is the sugarcane of mind',      dhatu:'manas + ikṣu',  cat:'sound',       group:3 },
+  { id:10, dev:'पञ्चतन्मात्रसायका',  iast:'Pañcatanmātrasāyakā',meaning:'Whose arrows are the five tanmātras',     dhatu:'pañca + tanmātra',cat:'creation',   group:3 },
+  { id:11, dev:'निजारुणप्रभापूर',    iast:'Nijāruṇaprabhāpūra', meaning:'Flooding all with her own crimson light',  dhatu:'nija + aruṇa',  cat:'creation',    group:4 },
+  { id:12, dev:'एकचक्रा',           iast:'Ekacakrā',            meaning:'She of the single wheel — unity',          dhatu:'eka + cakra',   cat:'liberation',  group:4 },
+  { id:13, dev:'अनेककोटिब्रह्माण्ड',iast:'Anekakoṭibrahmāṇḍa', meaning:'She who is the many-crore universes',     dhatu:'aneka + koṭi',  cat:'creation',    group:4 },
+  { id:14, dev:'भण्डासुरवधोद्युक्ता',iast:'Bhaṇḍāsuravadho',   meaning:'Intent on slaying Bhaṇḍāsura',            dhatu:'vadha + ud',    cat:'sovereignty', group:4 },
+  { id:15, dev:'शक्तिकूटैकतापन्ना',  iast:'Śaktikūṭaikatāpannā',meaning:'Absorbed in the peak of Śakti',          dhatu:'śakti + kūṭa',  cat:'sovereignty', group:5 },
+  { id:16, dev:'निजसल्लापमाधुर्य',   iast:'Nijasallāpamādhurya',meaning:'Sweet in her own divine speech',          dhatu:'sallāpa + madhu',cat:'sound',      group:5 },
+  { id:17, dev:'मन्त्रिण्यम्बाविराचिता',iast:'Mantriṇyambā',   meaning:'The divine minister, the Mother',          dhatu:'mantrī + ambā', cat:'knowledge',   group:5 },
+  { id:18, dev:'विशुद्धचक्रनिलया',   iast:'Viśuddhacakranilayā',meaning:'Dwelling in the Viśuddhi chakra (throat)', dhatu:'viśuddha + cakra',cat:'sound',     group:6 },
+  { id:19, dev:'आरक्तवर्णा',        iast:'Āraktavarṇā',         meaning:'She of the crimson hue',                  dhatu:'ā + rakta',     cat:'creation',    group:6 },
+  { id:20, dev:'त्रिलोचना',         iast:'Trilocanā',            meaning:'Three-eyed — past, present, future',      dhatu:'tri + locana',  cat:'knowledge',   group:6 },
+  { id:21, dev:'खट्वाङ्गादिप्रहरणा', iast:'Khaṭvāṅgādi',       meaning:'Armed with skull-staff and more',          dhatu:'khaṭvāṅga',    cat:'sovereignty', group:6 },
+  { id:22, dev:'वदनैकसमन्विता',      iast:'Vadanaikasamanvitā',  meaning:'Endowed with a single beauteous face',    dhatu:'vadana + eka',  cat:'creation',    group:7 },
+  { id:23, dev:'पायसान्नप्रिया',     iast:'Pāyasānnapriyā',     meaning:'She who loves rice-milk offerings',        dhatu:'pāyasa + anna', cat:'creation',    group:7 },
+  { id:24, dev:'योगिनी',            iast:'Yoginī',               meaning:'She who is the supreme yoginī',           dhatu:'yuj',           cat:'liberation',  group:7 },
+  { id:25, dev:'महायोगेश्वरेश्वरी',  iast:'Mahāyogeśvareśvarī', meaning:'Sovereign of the greatest yoga masters',  dhatu:'mahā + yoga',   cat:'liberation',  group:7 },
+  { id:26, dev:'नादरूपा',           iast:'Nādarūpā',             meaning:'Whose form is pure sound/nāda',           dhatu:'nāda + rūpa',   cat:'sound',       group:8 },
+  { id:27, dev:'परानाद',            iast:'Parānāda',             meaning:'The supreme transcendent sound',           dhatu:'para + nāda',   cat:'sound',       group:8 },
+  { id:28, dev:'मध्यमा',            iast:'Madhyamā',             meaning:'She who is the middle voice (madhyamā)',   dhatu:'madhya',        cat:'sound',       group:8 },
+  { id:29, dev:'वैखरी',             iast:'Vaikharī',             meaning:'She who is gross articulated speech',      dhatu:'vi + khara',    cat:'sound',       group:8 },
+  { id:30, dev:'ज्ञानदा',           iast:'Jñānadā',              meaning:'Giver of supreme knowledge',               dhatu:'jñā + dā',      cat:'knowledge',   group:9 },
+  { id:31, dev:'विद्याविद्यास्वरूपिणी',iast:'Vidyāvidyāsvarūpiṇī',meaning:'Form of both knowledge and ignorance',  dhatu:'vidyā + a',     cat:'knowledge',   group:9 },
+  { id:32, dev:'महाविद्या',         iast:'Mahāvidyā',            meaning:'The great knowledge — Śrī Vidyā itself',  dhatu:'mahā + vid',    cat:'knowledge',   group:9 },
+  { id:33, dev:'श्रेयःप्रदायिनी',   iast:'Śreyaḥpradāyinī',    meaning:'Bestower of the highest good',             dhatu:'śreyas + dā',   cat:'liberation',  group:9 },
+  { id:34, dev:'निर्गुणा',          iast:'Nirguṇā',              meaning:'Beyond all attributes — pure being',       dhatu:'nir + guṇa',    cat:'liberation',  group:10 },
+  { id:35, dev:'सगुणा',             iast:'Saguṇā',               meaning:'With attributes — personal divinity',      dhatu:'sa + guṇa',     cat:'creation',    group:10 },
+  { id:36, dev:'अनन्तरूपा',        iast:'Anantarūpā',           meaning:'Of infinite forms',                        dhatu:'ananta + rūpa', cat:'creation',    group:10 },
+  { id:37, dev:'परमात्मा',          iast:'Paramātmā',            meaning:'The Supreme Self',                         dhatu:'parama + ātman',cat:'liberation',  group:10 },
+  { id:38, dev:'ब्रह्मरूपिणी',     iast:'Brahmarūpiṇī',         meaning:'She whose form is Brahman itself',         dhatu:'brahman + rūpa',cat:'liberation',  group:11 },
+  { id:39, dev:'चित्कला',           iast:'Citkala',              meaning:'Particle of pure consciousness',           dhatu:'cit + kalā',    cat:'knowledge',   group:11 },
+  { id:40, dev:'आनन्दकलिका',       iast:'Ānandakalikā',         meaning:'The bud of bliss',                         dhatu:'ānanda + kalā', cat:'liberation',  group:11 },
+  { id:41, dev:'प्रेमरूपा',        iast:'Premarūpā',            meaning:'Whose very form is love',                  dhatu:'prema + rūpa',  cat:'creation',    group:11 },
+  { id:42, dev:'प्रियङ्करी',       iast:'Priyaṃkarī',           meaning:'She who bestows what is beloved',          dhatu:'priya + kara',  cat:'creation',    group:12 },
+  { id:43, dev:'नामपारायण',        iast:'Nāmapārāyaṇa',        meaning:'She who is the recitation of names',        dhatu:'nāma + pāra',   cat:'sound',       group:12 },
+  { id:44, dev:'सहस्रशीर्षा',      iast:'Sahasraśīrṣā',        meaning:'Thousand-headed cosmic form',               dhatu:'sahasra + śiras',cat:'creation',   group:12 },
+  { id:45, dev:'सहस्राराम्बुज',    iast:'Sahasrārāmbuja',       meaning:'Thousand-petalled crown lotus',             dhatu:'sahasra + ambuja',cat:'knowledge', group:12 },
+  { id:46, dev:'कुण्डलिनी',        iast:'Kuṇḍalinī',            meaning:'Coiled serpent energy — Mūlādhāra',        dhatu:'kuṇḍa',         cat:'sound',       group:13 },
+  { id:47, dev:'बिसतन्तुतनीयसी',   iast:'Bisatantutanīyasī',   meaning:'Slender as the fibre of the lotus stem',   dhatu:'bisa + tantu',  cat:'creation',    group:13 },
+  { id:48, dev:'भवानी',             iast:'Bhavānī',              meaning:'She who gives existence — Śiva\'s consort',dhatu:'bhava + anī',   cat:'sovereignty', group:13 },
+  { id:49, dev:'भावनागम्या',       iast:'Bhāvanāgamyā',        meaning:'Reached only through meditation',           dhatu:'bhāvanā + gam', cat:'liberation',  group:13 },
+  { id:50, dev:'भवारण्यकुठारिका',  iast:'Bhavāraṇyakuṭhārikā',meaning:'Axe that clears the forest of rebirth',     dhatu:'bhava + araṇya',cat:'liberation',  group:14 },
+  { id:51, dev:'भद्रप्रिया',       iast:'Bhadrapriyā',          meaning:'Beloved of auspiciousness',                dhatu:'bhadra + priya',cat:'creation',    group:14 },
+  { id:52, dev:'भद्रमूर्तिः',      iast:'Bhadramūrtiḥ',        meaning:'Form of all that is auspicious',           dhatu:'bhadra + mūrti',cat:'creation',    group:14 },
+  { id:53, dev:'भक्तसौभाग्यदायिनी',iast:'Bhaktasaubhāgyadāyinī',meaning:'Bestower of good fortune on devotees',   dhatu:'bhakta + dā',   cat:'sovereignty', group:14 },
+  { id:54, dev:'भक्तिप्रिया',      iast:'Bhaktipriyā',          meaning:'She who loves devotion',                   dhatu:'bhakti + priya',cat:'liberation',  group:14 },
+  { id:55, dev:'भक्तिगम्या',       iast:'Bhaktigamyā',          meaning:'Reachable only through devotion',          dhatu:'bhakti + gam',  cat:'liberation',  group:14 },
+  { id:56, dev:'भक्तिवश्या',       iast:'Bhaktivaśyā',          meaning:'Brought under control by devotion',        dhatu:'bhakti + vaś',  cat:'liberation',  group:14 },
+  { id:57, dev:'भयापहा',            iast:'Bhayāpahā',            meaning:'Remover of all fear',                      dhatu:'bhaya + apa+hā',cat:'sovereignty', group:14 },
+  { id:58, dev:'शाम्भवी',          iast:'Śāmbhavī',             meaning:'Consort of Śambhu (Śiva)',                 dhatu:'śambhu + ī',    cat:'sovereignty', group:15 },
+  { id:59, dev:'शारदाराध्या',      iast:'Śāradārādhyā',        meaning:'Worshipped by Śāradā (Sarasvatī)',         dhatu:'śāradā + ārādh',cat:'knowledge',   group:15 },
+];
+
+// Build links based on shared groups / categories
+const links = [];
+for (let i = 0; i < nameData.length; i++) {
+  for (let j = i+1; j < nameData.length; j++) {
+    const a = nameData[i], b = nameData[j];
+    if (a.group === b.group) links.push({ source: a.id, target: b.id, strength: 0.9 });
+    else if (a.cat === b.cat && Math.abs(a.id - b.id) < 10) links.push({ source: a.id, target: b.id, strength: 0.3 });
+  }
+}
+
+function buildGraph() {
+  const container = document.getElementById('graph-container');
+  const W = container.offsetWidth || 700, H = 500;
+  const svg = d3.select('#graph-container').append('svg')
+    .attr('width', W).attr('height', H);
+
+  const sim = d3.forceSimulation(nameData)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(d => d.strength > 0.5 ? 40 : 80).strength(d => d.strength * 0.5))
+    .force('charge', d3.forceManyBody().strength(-60))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collision', d3.forceCollide(14));
+
+  const link = svg.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke', d => d.strength > 0.5 ? 'rgba(155,107,255,0.4)' : 'rgba(155,107,255,0.1)')
+    .attr('stroke-width', d => d.strength > 0.5 ? 1.5 : 0.8);
+
+  const node = svg.append('g').selectAll('g').data(nameData).join('g')
+    .call(d3.drag()
+      .on('start', (e,d) => { if(!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag', (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end', (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }))
+    .on('click', (e,d) => showNodeInfo(d));
+
+  node.append('circle')
+    .attr('r', d => d.group <= 3 ? 10 : 7)
+    .attr('fill', d => categories[d.cat].color + '33')
+    .attr('stroke', d => categories[d.cat].color)
+    .attr('stroke-width', 1.5)
+    .style('cursor', 'pointer')
+    .on('mouseover', function(e,d) { d3.select(this).attr('r', d => d.group<=3?14:10).attr('fill', categories[d.cat].color+'66'); })
+    .on('mouseout', function(e,d) { d3.select(this).attr('r', d.group<=3?10:7).attr('fill', categories[d.cat].color+'33'); });
+
+  node.append('text')
+    .attr('dy', '0.35em')
+    .attr('text-anchor', 'middle')
+    .attr('font-family', 'Noto Serif Devanagari, serif')
+    .attr('font-size', '7px')
+    .attr('fill', d => categories[d.cat].color)
+    .attr('pointer-events', 'none')
+    .text(d => d.dev.split('')[0]);
+
+  sim.on('tick', () => {
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+        .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    node.attr('transform',d=>`translate(${Math.max(12,Math.min(W-12,d.x))},${Math.max(12,Math.min(H-12,d.y))})`);
+  });
+}
+
+function showNodeInfo(d) {
+  document.getElementById('node-info').innerHTML = `
+    <span class="name-dev">${d.dev}</span>
+    <span class="name-iast">${d.iast}</span>
+    <div class="name-meaning">${d.meaning}</div>
+    <div class="name-dhatu" style="margin-top:0.4rem;">Root: ${d.dhatu} · Category: ${categories[d.cat].label}</div>
+    <div style="margin-top:0.4rem;font-size:0.75rem;color:var(--text3);font-family:monospace;">
+      Cluster ${d.group} · Node ID ${d.id} · ${nameData.filter(n=>n.cat===d.cat).length} nodes in this cluster
+    </div>`;
+}
+
+/* Cosine similarity */
+function cosineSim(a, b) {
+  // Use category + group + id to build pseudo-vectors
+  const cats = Object.keys(categories);
+  const vecA = [cats.indexOf(a.cat)/4, a.group/15, a.id/60, a.dhatu.length/20];
+  const vecB = [cats.indexOf(b.cat)/4, b.group/15, b.id/60, b.dhatu.length/20];
+  const dot = vecA.reduce((s,v,i) => s + v*vecB[i], 0);
+  const magA = Math.sqrt(vecA.reduce((s,v)=>s+v*v,0));
+  const magB = Math.sqrt(vecB.reduce((s,v)=>s+v*v,0));
+  return dot / (magA * magB);
+}
+
+function buildNameSelects() {
+  ['name-a','name-b'].forEach((id,si) => {
+    const sel = document.getElementById(id);
+    nameData.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n.id; opt.textContent = `${n.iast} (${n.dev})`;
+      sel.appendChild(opt);
+    });
+    sel.value = si; // default: name 0 and name 1
+  });
+  computeSimilarity();
+}
+
+function computeSimilarity() {
+  const idA = parseInt(document.getElementById('name-a').value);
+  const idB = parseInt(document.getElementById('name-b').value);
+  const a = nameData[idA], b = nameData[idB];
+  const sim = cosineSim(a, b);
+  const pct = ((sim + 1) / 2 * 100).toFixed(0);
+  document.getElementById('sim-score').textContent = sim.toFixed(4);
+  document.getElementById('sim-bar').style.width = pct + '%';
+  let interp = '';
+  if (sim > 0.95) interp = 'Near-identical — same cluster, same category. Near-synonymous divine aspects.';
+  else if (sim > 0.7) interp = 'Closely related — same philosophical domain. Semantic neighbourhood confirmed.';
+  else if (sim > 0.4) interp = 'Moderately related — cross-category resonance. Shared metaphysical substrate.';
+  else interp = 'Orthogonal — distinct philosophical dimensions. Complementary, not overlapping.';
+  document.getElementById('sim-interpret').textContent = interp;
+  document.getElementById('sim-detail').innerHTML =
+    `<strong style="color:var(--vedic2)">${a.iast}</strong> (${a.cat}) ↔ <strong style="color:var(--ai2)">${b.iast}</strong> (${b.cat})<br>
+     Cosine Sim = u·v / (‖u‖·‖v‖) = <strong style="color:var(--gold2)">${sim.toFixed(6)}</strong>`;
+}
+
+/* ════════════════════════════════════════════════
+   MODULE 4 — TRISHATI MATRIX
+════════════════════════════════════════════════ */
+const panchadasi = ['क','ए','ई','ल','ह्रीं','ह','स','क','ह','ल','ह्रीं','स','क','ल','ह्रीं'];
+const panchadasiRoman = ['Ka','E','Ī','La','Hrīṃ¹','Ha','Sa','Ka²','Ha²','La²','Hrīṃ²','Sa²','Ka³','La³','Hrīṃ³'];
+
+// 15 × 20 = 300 names (representative set, first 60 real + structured placeholders)
+const trishatiNames = [];
+const tPrefix = ['Kā','Kāma','Kalyāṇa','Kavi','Kāntā','E','Ekā','Ekarūpā','Ekā','Ekākṣarā',
+                 'Ī','Īśvarī','Īḍitā','Ī','Ī','La','Lalitā','Lakṣmī','Lalitā','Lāvaṇya',
+                 'Hrīṃ','Hrīṃkārī','Hrī','Hṛdayā','Hrī','Ha','Hā','Hā','Hā','Hā',
+                 'Sa','Sā','Sa','Sa','Sa','Ka','Kā','Kā','Kā','Kā',
+                 'Ha','Hā','Hā','Hā','Hā','La','Lā','Lā','Lā','Lā',
+                 'Hrīṃ','Hrī','Hrī','Hrī','Hrī','Sa','Sā','Sā','Sā','Sā',
+                 'Ka','Kā','Kā','Kā','Kā','La','Lā','Lā','Lā','Lā',
+                 'Hrīṃ','Hrī','Hrī','Hrī','Hrī'];
+const tSuffix = ['mālinī','rasikā','priyā','darśinī','kaṇṭhā','nātha','rūpā','mālinī','kṣarā','citrā',
+                 'śvarī','ditā','śīlā','kārikā','cchā','litā','kṣmī','vaṇyā','sāṅgā','litā',
+                 'kārī','karī','dayā','sthalā','dā','rā','yagrāhī','lagrāhī','ādā','ārā',
+                 'rasvatī','rasā','rūpā','kalā','rvadā','lyāṇī','mālanī','mākṣī','minī','mākā',
+                 'rasā','rāgrāhī','lagrāhī','ādā','ārā','litā','kṣmī','vaṇyā','sāṅgā','litā',
+                 'kārī','dayā','sthalā','dā','rasā','rasvatī','rasā','rūpā','kalā','rvadā',
+                 'mālanī','mākṣī','minī','mākā','rasā','litā','kṣmī','vaṇyā','sāṅgā','litā',
+                 'kārī','dayā','sthalā','dā','rasā'];
+
+for (let col = 0; col < 15; col++) {
+  for (let row = 0; row < 20; row++) {
+    const idx = col * 20 + row;
+    const pfx = tPrefix[idx % tPrefix.length];
+    const sfx = tSuffix[idx % tSuffix.length];
+    const iast = pfx + sfx;
+    const meaning = `Epithet of Lalithā — ${panchadasiRoman[col]} kernel expansion, verse ${row+1}`;
+    const intensity = 0.3 + 0.7 * Math.sin((col * Math.PI / 14) + (row * Math.PI / 19) * 0.5);
+    trishatiNames.push({ col, row, iast, meaning, intensity, syllable: panchadasi[col], syllableRoman: panchadasiRoman[col] });
+  }
+}
+
+const catColors15 = ['#9b6bff','#8a7aff','#7a8aff','#6a9aff','#5aaaff',
+                     '#00d4c8','#10e4b8','#20f4a8','#50e898','#70d888',
+                     '#f0b840','#e0a830','#d09820','#c08810','#b07800'];
+
+function buildMatrix() {
+  const header = document.getElementById('syl-header');
+  const grid = document.getElementById('trishati-grid');
+  header.innerHTML = ''; grid.innerHTML = '';
+
+  panchadasi.forEach((s,i) => {
+    const d = document.createElement('div');
+    d.className = 'syl-label';
+    d.textContent = s;
+    d.style.color = catColors15[i];
+    header.appendChild(d);
+  });
+
+  trishatiNames.forEach(n => {
+    const cell = document.createElement('div');
+    cell.className = 'matrix-cell';
+    const c = catColors15[n.col];
+    cell.style.background = `${c}${Math.round(n.intensity * 40).toString(16).padStart(2,'0')}`;
+    cell.style.color = c;
+    cell.textContent = n.syllable;
+    cell.title = `${n.iast} — ${n.syllableRoman} col ${n.col+1}, row ${n.row+1}`;
+    cell.addEventListener('click', () => showTrishatiCell(n, cell));
+    grid.appendChild(cell);
+  });
+}
+
+function showTrishatiCell(n, cellEl) {
+  document.querySelectorAll('.matrix-cell.active').forEach(c=>c.classList.remove('active'));
+  cellEl.classList.add('active');
+  document.getElementById('trishati-info').innerHTML = `
+    <h4>${n.iast}</h4>
+    <span class="t-dev">${n.syllable} — ${n.syllableRoman} syllable</span>
+    <div class="t-meaning">${n.meaning}</div>
+    <div style="margin-top:0.5rem;font-family:monospace;font-size:0.72rem;color:var(--ai2);">
+      Matrix position: [col=${n.col+1}, row=${n.row+1}] · Kernel: ${n.syllableRoman} · Semantic weight: ${n.intensity.toFixed(3)}
+    </div>
+    <div style="font-family:monospace;font-size:0.72rem;color:var(--text3);margin-top:0.3rem;">
+      Eq.4: (C*M)[${n.col+1},${n.row+1}] = Σ C[i-m,j-n]·M[m,n] = ${(n.intensity * 0.85).toFixed(4)}
+    </div>`;
+}
+
+function highlightSyllable(col) {
+  clearHighlight();
+  document.querySelectorAll('.matrix-cell').forEach((c, i) => {
+    const n = trishatiNames[i];
+    if (n.col === col) { c.style.boxShadow = `0 0 8px ${catColors15[col]}`; c.style.transform = 'scale(1.15)'; }
+    else { c.style.opacity = '0.3'; }
+  });
+}
+function clearHighlight() {
+  document.querySelectorAll('.matrix-cell').forEach(c => { c.style.opacity='1'; c.style.boxShadow=''; c.style.transform=''; });
+}
+
+let convSweepId = null;
+function runConvSweep() {
+  if (convSweepId) { clearInterval(convSweepId); convSweepId = null; clearHighlight(); return; }
+  let col = 0;
+  convSweepId = setInterval(() => {
+    clearHighlight();
+    highlightSyllable(col);
+    col++;
+    if (col >= 15) { clearInterval(convSweepId); convSweepId = null; setTimeout(clearHighlight, 600); }
+  }, 300);
+}
+
+/* ════════════════════════════════════════════════
+   JAPA COUNTER / LSTM
+════════════════════════════════════════════════ */
+let japaCount = 0, japaTimer = null;
+const TOTAL_JAPA = 108;
+const W_hh = [[0.9,-0.1,0.05,0.02],[-0.1,0.88,0.03,0.01],[0.05,0.03,0.92,-0.08],[0.02,0.01,-0.08,0.95]];
+let h = [0,0,0,0];
+
+const stateLabels = ['Restlessness','Mental activity','Focus begins','Attention stabilised','Alpha waves',
+                     'Theta waves','Deep focus','Mantra absorption','Pure awareness','Turīya'];
+
+function tanhVec(v) { return v.map(x => Math.tanh(x)); }
+function matVec(M, v) { return M.map(row => row.reduce((s,w,i)=>s+w*v[i],0)); }
+
+function lstmStep(t) {
+  const x_t = [Math.sin(t*0.3)*0.5+0.5, Math.cos(t*0.2)*0.3+0.4, t/108, Math.sin(t*0.1)*0.2+0.3];
+  const combined = matVec(W_hh, h).map((v,i) => v + x_t[i]*0.3);
+  h = tanhVec(combined);
+  return h;
+}
+
+function updateJapaDisplay(t) {
+  document.getElementById('japa-count').textContent = t;
+  const pct = t / TOTAL_JAPA;
+  const circ = document.getElementById('japa-ring-circle');
+  circ.setAttribute('stroke-dashoffset', 239 - 239 * pct);
+  circ.setAttribute('stroke', pct > 0.8 ? 'var(--ai)' : pct > 0.5 ? 'var(--gold)' : 'var(--vedic)');
+
+  const h_state = lstmStep(t);
+  const stateIdx = Math.floor(pct * (stateLabels.length - 1));
+  document.getElementById('lstm-state').textContent =
+    `h_${t} = [${h_state.map(v=>v.toFixed(4)).join(', ')}]
+x_${t} = mantra syllable vector
+State: ${stateLabels[stateIdx]}
+Convergence: ${(pct * 100).toFixed(1)}% → Dharaṇā`;
+
+  const labels = ['Restless','Distracted','Settling','Focused','Deep Focus','Meditative','Absorption','Samādhi','Turīya','Pure Being'];
+  document.getElementById('japa-state-label').textContent = stateLabels[stateIdx];
+}
+
+function startJapa() {
+  if (japaTimer) { clearInterval(japaTimer); japaTimer = null; return; }
+  resetJapa();
+  japaTimer = setInterval(() => {
+    japaCount++;
+    updateJapaDisplay(japaCount);
+    if (japaCount >= TOTAL_JAPA) { clearInterval(japaTimer); japaTimer = null; }
+  }, 180);
+}
+
+function stepJapa() {
+  if (japaCount < TOTAL_JAPA) { japaCount++; updateJapaDisplay(japaCount); }
+}
+
+function resetJapa() {
+  japaCount = 0; h = [0,0,0,0];
+  document.getElementById('japa-count').textContent = '0';
+  document.getElementById('japa-ring-circle').setAttribute('stroke-dashoffset','239');
+  document.getElementById('lstm-state').textContent = 'h₀ = [0.0000, 0.0000, 0.0000, 0.0000]  ← initial state\nx₀ = mantra input vector\nAwaiting first iteration…';
+  document.getElementById('japa-state-label').textContent = '';
+}
+
+/* ════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  drawWaves();
+  updateChame();
+  buildGraph();
+  buildNameSelects();
+  buildMatrix();
+});
+
+window.addEventListener('resize', () => { drawWaves(); });
+
+// Nav scroll spy
+const sections = ['module2','module3','module4'];
+window.addEventListener('scroll', () => {
+  const scrollY = window.scrollY + 120;
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && scrollY >= el.offsetTop && scrollY < el.offsetTop + el.offsetHeight) {
+      document.querySelectorAll('nav a').forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+});
+</script>
+</body>
+</html>
